@@ -1,8 +1,58 @@
 -- Subquery (SELECT, FROM, WHERE, HAVING)
 
+-- Example: SELECT
+SELECT
+    e.employee_id,
+    e.name,
+    (SELECT d.department_name 
+     FROM departments d 
+     WHERE d.department_id = e.department_id) AS department_name,
+    (SELECT AVG(salary) 
+     FROM employees 
+     WHERE department_id = e.department_id) AS avg_department_salary
+FROM employees e;
+
+-- Example: FROM
+SELECT
+    dept_summary.department_id,
+    dept_summary.avg_salary,
+    dept_summary.employee_count
+FROM (
+    SELECT
+        department_id,
+        AVG(salary) AS avg_salary,
+        COUNT(*) AS employee_count
+    FROM employees
+    GROUP BY department_id
+) AS dept_summary
+WHERE dept_summary.avg_salary > 60000
+ORDER BY dept_summary.avg_salary DESC;
+
+-- Example: WHERE
+SELECT
+    name,
+    department_id,
+    salary
+FROM employees
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM employees
+);
+
+-- Example: HAVING
+SELECT
+    department_id,
+    AVG(salary) AS avg_salary
+FROM employees
+GROUP BY department_id
+HAVING AVG(salary) > (
+    SELECT AVG(salary)
+    FROM employees
+);
+
+
 --count distinct skill_id for each company. include all companies
 WITH 
-
 required_skills AS (
     SELECT
         company_dim.company_id,
@@ -15,7 +65,6 @@ required_skills AS (
         skills_job_dim.job_id = job_postings_fact.job_id
     GROUP BY company_dim.company_id
 ),
-
 
 company_highest_salary AS (
     SELECT
@@ -202,11 +251,6 @@ ORDER BY job_count DESC
 LIMIT 5;
 
 
-
-
-
-
-
 SELECT *
 FROM (
     SELECT *
@@ -234,6 +278,61 @@ ORDER BY company_id
 
 
 -- CTE (SELECT, INSERT, UPDATE, DELETE)
+
+-- Example: SELECT
+WITH department_avg AS (
+    SELECT
+        department_id,
+        AVG(salary) AS avg_salary
+    FROM employees
+    GROUP BY department_id
+)
+SELECT
+    e.employee_id,
+    e.name,
+    e.salary,
+    d.avg_salary
+FROM employees e
+JOIN department_avg d ON e.department_id = d.department_id
+WHERE e.salary > d.avg_salary;
+
+-- Example: INSERT
+WITH new_sales AS (
+    SELECT
+        customer_id,
+        SUM(amount) AS total_amount
+    FROM orders
+    WHERE order_date >= '2025-01-01'
+    GROUP BY customer_id
+)
+INSERT INTO customer_sales_summary (customer_id, total_sales)
+SELECT
+    customer_id,
+    total_amount
+FROM new_sales;
+
+-- Example: UPDATE
+WITH high_performers AS (
+    SELECT
+        employee_id
+    FROM employees
+    WHERE performance_rating = 'Excellent'
+)
+UPDATE employees
+SET bonus = bonus + 1000
+WHERE employee_id IN (SELECT employee_id FROM high_performers);
+
+-- Example: DELETE
+WITH inactive_customers AS (
+    SELECT
+        customer_id
+    FROM customers
+    WHERE last_order_date < '2020-01-01'
+)
+DELETE FROM customers
+WHERE customer_id IN (SELECT customer_id FROM inactive_customers);
+
+;
 
 WITH title_diversity AS (
     SELECT
